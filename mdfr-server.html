@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Miami-Dade Fire Rescue | Ignite Simulation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #C8102E;
+      --red-dark: #9B0C23;
+      --yellow: #FFD100;
+      --black: #0A0A0A;
+      --dark: #111111;
+      --dark2: #1A1A1A;
+      --dark3: #222222;
+      --white: #F5F5F0;
+      --grey: #888888;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-condensed: 'Barlow Condensed', sans-serif;
+      --font-body: 'Barlow', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(200,16,46,0.3);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-badge {
+      width: 36px;
+      height: 36px;
+      background: var(--red);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .nav-title {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--white);
+      line-height: 1.2;
+    }
+
+    .nav-title span {
+      display: block;
+      font-size: 10px;
+      color: var(--grey);
+      font-weight: 600;
+      letter-spacing: 0.2em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-condensed);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--grey);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--yellow); }
+
+    .nav-cta {
+      background: var(--red);
+      color: white !important;
+      padding: 8px 20px;
+      font-family: var(--font-condensed) !important;
+      font-weight: 700 !important;
+      font-size: 12px !important;
+      letter-spacing: 0.2em !important;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: background 0.2s !important;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+
+    .nav-cta:hover { background: var(--red-dark) !important; color: white !important; }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 80px 48px 48px;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 60% 60% at 70% 50%, rgba(200,16,46,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(255,209,0,0.05) 0%, transparent 60%),
+        linear-gradient(160deg, #0A0A0A 0%, #111111 100%);
+    }
+
+    .hero-stripe {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: linear-gradient(180deg, var(--yellow), var(--red), var(--yellow));
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(200,16,46,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,16,46,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 2px;
+      background: var(--yellow);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(64px, 10vw, 120px);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .hero h1 .accent { color: var(--red); }
+
+    .hero-sub {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 56px);
+      line-height: 1;
+      color: var(--grey);
+      letter-spacing: 0.05em;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #AAAAAA;
+      max-width: 520px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--red);
+      color: white;
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 16px 32px;
+      clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--red-dark); transform: translateY(-2px); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--grey);
+      font-family: var(--font-condensed);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .btn-secondary:hover { color: var(--white); }
+
+    .hero-stats {
+      position: absolute;
+      right: 48px;
+      bottom: 60px;
+      display: flex;
+      gap: 40px;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+
+    .stat {
+      text-align: right;
+    }
+
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 40px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .stat-number span { color: var(--red); }
+
+    .stat-label {
+      font-family: var(--font-condensed);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--grey);
+      margin-top: 4px;
+    }
+
+    /* ─── SECTIONS ─── */
+    section {
+      padding: 100px 48px;
+      position: relative;
+    }
+
+    .section-label {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      display: block;
+      flex: 1;
+      max-width: 40px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      margin-bottom: 48px;
+    }
+
+    /* ─── ABOUT ─── */
+    #about {
+      background: var(--dark);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .about-text p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #AAAAAA;
+      margin-bottom: 20px;
+    }
+
+    .about-text p strong { color: var(--white); }
+
+    .about-pillars {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .pillar {
+      background: var(--dark2);
+      padding: 28px 24px;
+      border-left: 3px solid var(--red);
+      transition: background 0.2s;
+    }
+
+    .pillar:hover { background: var(--dark3); }
+
+    .pillar-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .pillar-title {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+
+    .pillar p {
+      font-size: 13px;
+      color: var(--grey);
+      line-height: 1.6;
+    }
+
+    /* ─── RANKS ─── */
+    #ranks {
+      background: var(--black);
+    }
+
+    .ranks-grid {
+      display: grid;
+      gap: 2px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 28px;
+      background: var(--dark2);
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .rank-row:hover {
+      background: var(--dark3);
+      border-left-color: var(--red);
+    }
+
+    .rank-row.command { border-left-color: var(--yellow); }
+    .rank-row.command:hover { border-left-color: var(--yellow); }
+
+    .rank-number {
+      font-family: var(--font-display);
+      font-size: 28px;
+      color: var(--dark3);
+      text-align: center;
+    }
+
+    .rank-row:hover .rank-number { color: rgba(200,16,46,0.3); }
+    .rank-row.command .rank-number { color: rgba(255,209,0,0.2); }
+
+    .rank-name {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .rank-desc {
+      font-size: 13px;
+      color: var(--grey);
+    }
+
+    .rank-badge {
+      font-family: var(--font-condensed);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      background: rgba(200,16,46,0.15);
+      color: var(--red);
+      border: 1px solid rgba(200,16,46,0.3);
+    }
+
+    .rank-badge.gold {
+      background: rgba(255,209,0,0.1);
+      color: var(--yellow);
+      border-color: rgba(255,209,0,0.3);
+    }
+
+    /* ─── SOPs ─── */
+    #sops {
+      background: var(--dark);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .sop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    .sop-card {
+      background: var(--dark2);
+      padding: 36px 28px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+
+    .sop-card:hover { background: var(--dark3); }
+
+    .sop-card::before {
+      content: attr(data-num);
+      position: absolute;
+      top: -10px;
+      right: 16px;
+      font-family: var(--font-display);
+      font-size: 80px;
+      color: rgba(255,255,255,0.03);
+      line-height: 1;
+    }
+
+    .sop-icon {
+      width: 44px;
+      height: 44px;
+      background: rgba(200,16,46,0.15);
+      border: 1px solid rgba(200,16,46,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    .sop-title {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .sop-card p {
+      font-size: 13px;
+      color: var(--grey);
+      line-height: 1.7;
+    }
+
+    /* ─── JOIN ─── */
+    #join {
+      background: var(--black);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #join::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(200,16,46,0.08) 0%, transparent 70%);
+    }
+
+    .join-content {
+      position: relative;
+      z-index: 2;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .join-content .section-label {
+      justify-content: center;
+    }
+
+    .join-content .section-label::after { display: none; }
+    .join-content .section-label::before {
+      content: '';
+      display: block;
+      flex: 1;
+      max-width: 40px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    .join-content p {
+      font-size: 17px;
+      color: #AAAAAA;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    .requirements {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      text-align: left;
+      margin-bottom: 48px;
+    }
+
+    .req-item {
+      background: var(--dark2);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #AAAAAA;
+      font-family: var(--font-condensed);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .req-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--yellow);
+      flex-shrink: 0;
+    }
+
+    .join-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--red);
+      color: white;
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 20px 48px;
+      clip-path: polygon(16px 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .join-btn:hover { background: var(--red-dark); transform: translateY(-3px); }
+
+    /* ─── CONTACT ─── */
+    #contact {
+      background: var(--dark);
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .contact-info p {
+      font-size: 15px;
+      color: #AAAAAA;
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+
+    .contact-cards {
+      display: grid;
+      gap: 2px;
+    }
+
+    .contact-card {
+      background: var(--dark2);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: background 0.2s;
+    }
+
+    .contact-card:hover { background: var(--dark3); }
+
+    .contact-card-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(200,16,46,0.15);
+      border: 1px solid rgba(200,16,46,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .contact-card-label {
+      font-family: var(--font-condensed);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--grey);
+      margin-bottom: 2px;
+    }
+
+    .contact-card-value {
+      font-family: var(--font-condensed);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .leadership {
+      display: grid;
+      gap: 2px;
+    }
+
+    .leader-card {
+      background: var(--dark2);
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: background 0.2s;
+    }
+
+    .leader-card:hover { background: var(--dark3); }
+
+    .leader-avatar {
+      width: 48px;
+      height: 48px;
+      background: var(--red);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .leader-avatar.gold { background: var(--yellow); color: var(--black); }
+
+    .leader-name {
+      font-family: var(--font-condensed);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .leader-rank {
+      font-size: 12px;
+      color: var(--grey);
+      margin-top: 2px;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--black);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      font-family: var(--font-condensed);
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--grey);
+    }
+
+    .footer-left strong { color: var(--red); }
+
+    .footer-disclaimer {
+      font-size: 11px;
+      color: rgba(136,136,136,0.5);
+      max-width: 400px;
+      text-align: right;
+      line-height: 1.5;
+    }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(200,16,46,0.4), transparent);
+      margin: 0 48px;
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--black); }
+    ::-webkit-scrollbar-thumb { background: var(--red); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-badge">🔥</div>
+    <div class="nav-title">
+      Miami-Dade Fire Rescue
+      <span>Ignite Simulation Division</span>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#ranks">Ranks</a></li>
+    <li><a href="#sops">SOPs</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="https://discord.gg/mcZt3RTw7B" class="nav-cta" target="_blank">Join Discord</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-stripe"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">Ignite Simulation · Est. 2025</div>
+    <h1>MIAMI<span class="accent">-DADE</span></h1>
+    <div class="hero-sub">Fire & Rescue</div>
+    <p class="hero-desc">
+      The most realistic and professionally structured Miami-Dade Fire Rescue simulation server on Ignite. We don't just play firefighter — we operate like one.
+    </p>
+    <div class="hero-actions">
+      <a href="https://discord.gg/mcZt3RTw7B" class="btn-primary" target="_blank">
+        <span>⚡</span> Join the Department
+      </a>
+      <a href="#about" class="btn-secondary">Learn More →</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-number">71<span>+</span></div>
+      <div class="stat-label">Stations Simulated</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">24<span>/7</span></div>
+      <div class="stat-label">Operations</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">100<span>%</span></div>
+      <div class="stat-label">Realism Standard</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-text">
+      <div class="section-label">About Us</div>
+      <h2 class="section-title">Built Different.<br>Built Real.</h2>
+      <p>
+        Most simulation servers call themselves realistic. We built our department from the ground up to actually <strong>operate</strong> like one. Every rank, every SOP, every protocol mirrors the structure of the real Miami-Dade Fire Rescue.
+      </p>
+      <p>
+        Founded by experienced players with real-world firefighting knowledge, our server is led by <strong>Chief Roscoe</strong> — an active firefighter in the UK — and <strong>Deputy Chief</strong> on the administrative side. We bring credibility others can't match.
+      </p>
+      <p>
+        Whether you're a serious sim enthusiast or someone looking to learn what the fire service is really about — this is where you belong.
+      </p>
+    </div>
+    <div class="about-pillars">
+      <div class="pillar">
+        <div class="pillar-icon">🎖️</div>
+        <div class="pillar-title">Real Structure</div>
+        <p>Full department hierarchy mirroring actual MDFR rank structure and chain of command.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">📋</div>
+        <div class="pillar-title">Actual SOPs</div>
+        <p>Standard Operating Procedures based on real fire service protocols — not made up rules.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🚒</div>
+        <div class="pillar-title">Active Leadership</div>
+        <p>Led by a real UK firefighter and an operations chief with deep fire science knowledge.</p>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🏆</div>
+        <div class="pillar-title">High Standards</div>
+        <p>We maintain quality over quantity. Every member is expected to perform professionally.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- RANKS -->
+<section id="ranks">
+  <div class="section-label">Chain of Command</div>
+  <h2 class="section-title">Department Ranks</h2>
+
+  <div class="ranks-grid">
+    <div class="rank-row command">
+      <div class="rank-number">01</div>
+      <div>
+        <div class="rank-name">Fire Chief</div>
+        <div class="rank-desc">Overall command authority of the department</div>
+      </div>
+      <div class="rank-desc">S. Roscoe — Active UK Firefighter</div>
+      <div class="rank-badge gold">Command</div>
+    </div>
+    <div class="rank-row command">
+      <div class="rank-number">02</div>
+      <div>
+        <div class="rank-name">Deputy Chief</div>
+        <div class="rank-desc">Operations, administration, and server management</div>
+      </div>
+      <div class="rank-desc">Bishop — Operations & Administration</div>
+      <div class="rank-badge gold">Command</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">03</div>
+      <div>
+        <div class="rank-name">Battalion Chief</div>
+        <div class="rank-desc">Oversees multiple companies and major incident command</div>
+      </div>
+      <div class="rank-desc">Senior Officer</div>
+      <div class="rank-badge">Officer</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">04</div>
+      <div>
+        <div class="rank-name">Captain</div>
+        <div class="rank-desc">Station commander and company officer</div>
+      </div>
+      <div class="rank-desc">Company Officer</div>
+      <div class="rank-badge">Officer</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">05</div>
+      <div>
+        <div class="rank-name">Lieutenant</div>
+        <div class="rank-desc">Assistant company officer and crew supervisor</div>
+      </div>
+      <div class="rank-desc">Junior Officer</div>
+      <div class="rank-badge">Officer</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">06</div>
+      <div>
+        <div class="rank-name">Driver Engineer</div>
+        <div class="rank-desc">Apparatus operator and pump operator</div>
+      </div>
+      <div class="rank-desc">Specialist</div>
+      <div class="rank-badge">Specialist</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">07</div>
+      <div>
+        <div class="rank-name">Firefighter II</div>
+        <div class="rank-desc">Experienced firefighter with advanced certifications</div>
+      </div>
+      <div class="rank-desc">Career Firefighter</div>
+      <div class="rank-badge">Firefighter</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">08</div>
+      <div>
+        <div class="rank-name">Firefighter I</div>
+        <div class="rank-desc">Entry-level certified firefighter</div>
+      </div>
+      <div class="rank-desc">Entry Level</div>
+      <div class="rank-badge">Firefighter</div>
+    </div>
+    <div class="rank-row">
+      <div class="rank-number">09</div>
+      <div>
+        <div class="rank-name">Probationary Firefighter</div>
+        <div class="rank-desc">New recruit under training and evaluation</div>
+      </div>
+      <div class="rank-desc">Recruit</div>
+      <div class="rank-badge">Recruit</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SOPs -->
+<section id="sops">
+  <div class="section-label">Standard Operating Procedures</div>
+  <h2 class="section-title">How We Operate</h2>
+
+  <div class="sop-grid">
+    <div class="sop-card" data-num="01">
+      <div class="sop-icon">🔊</div>
+      <div class="sop-title">Radio Discipline</div>
+      <p>All communications follow proper radio etiquette. Units identify by designation, use 10-codes where applicable, and maintain clear brevity on all channels.</p>
+    </div>
+    <div class="sop-card" data-num="02">
+      <div class="sop-icon">🚨</div>
+      <div class="sop-title">Incident Command</div>
+      <p>Every active incident establishes a clear IC. Scene size-up, resource requests, and tactical assignments follow NIMS ICS structure at all times.</p>
+    </div>
+    <div class="sop-card" data-num="03">
+      <div class="sop-icon">🚒</div>
+      <div class="sop-title">Apparatus Response</div>
+      <p>Unit response follows dispatch priority levels. All apparatus operates under departmental response zones with proper staging and positioning procedures.</p>
+    </div>
+    <div class="sop-card" data-num="04">
+      <div class="sop-icon">👔</div>
+      <div class="sop-title">Conduct & Professionalism</div>
+      <p>Members represent MDFR at all times. Professional conduct is mandatory both on scene and in department communications. Zero tolerance for misconduct.</p>
+    </div>
+    <div class="sop-card" data-num="05">
+      <div class="sop-icon">📝</div>
+      <div class="sop-title">Reporting & Documentation</div>
+      <p>Significant incidents require after-action documentation. Members log training hours and notable calls in accordance with departmental record keeping.</p>
+    </div>
+    <div class="sop-card" data-num="06">
+      <div class="sop-icon">🎓</div>
+      <div class="sop-title">Training Requirements</div>
+      <p>All members must complete department orientation before active deployment. Ongoing training is required to maintain rank and eligibility for promotion.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- JOIN -->
+<section id="join">
+  <div class="join-content">
+    <div class="section-label">Recruitment</div>
+    <h2 class="section-title">Join the Department</h2>
+    <p>We're selective for a reason. We want members who take the simulation seriously and want to be part of something built to last. If that's you, the door is open.</p>
+
+    <div class="requirements">
+      <div class="req-item"><div class="req-dot"></div>Own Ignite on PC</div>
+      <div class="req-item"><div class="req-dot"></div>Active Discord presence</div>
+      <div class="req-item"><div class="req-dot"></div>Willingness to follow SOPs</div>
+      <div class="req-item"><div class="req-dot"></div>Respectful & professional</div>
+      <div class="req-item"><div class="req-dot"></div>Committed to realism</div>
+      <div class="req-item"><div class="req-dot"></div>Team player mentality</div>
+    </div>
+
+    <a href="https://discord.gg/mcZt3RTw7B" class="join-btn" target="_blank">
+      <span>🔥</span> Join Our Discord
+    </a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-grid">
+    <div class="contact-info">
+      <div class="section-label">Contact</div>
+      <h2 class="section-title">Reach Out</h2>
+      <p>Have questions before joining? Want to discuss a partnership with another server? Reach us through Discord — it's the fastest way to get a response from leadership.</p>
+
+      <div class="contact-cards">
+        <div class="contact-card">
+          <div class="contact-card-icon">💬</div>
+          <div>
+            <div class="contact-card-label">Primary Contact</div>
+            <div class="contact-card-value">Discord Server</div>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-card-icon">🌐</div>
+          <div>
+            <div class="contact-card-label">Server Link</div>
+            <div class="contact-card-value">discord.gg/mcZt3RTw7B</div>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="contact-card-icon">🎮</div>
+          <div>
+            <div class="contact-card-label">Platform</div>
+            <div class="contact-card-value">Ignite Fire Simulation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Leadership</div>
+      <h3 style="font-family: var(--font-condensed); font-size: 24px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; color: var(--white);">Command Staff</h3>
+      <div class="leadership">
+        <div class="leader-card">
+          <div class="leader-avatar gold">R</div>
+          <div>
+            <div class="leader-name">S. Roscoe</div>
+            <div class="leader-rank">Fire Chief · Active UK Firefighter</div>
+          </div>
+        </div>
+        <div class="leader-card">
+          <div class="leader-avatar">B</div>
+          <div>
+            <div class="leader-name">Bishop</div>
+            <div class="leader-rank">Deputy Chief · Operations & Administration</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <strong>MDFR</strong> · Ignite Simulation Division · 2025
+  </div>
+  <div class="footer-disclaimer">
+    This is an unofficial fan simulation server. Not affiliated with the real Miami-Dade Fire Rescue Department.
+  </div>
+</footer>
+
+</body>
+</html>
